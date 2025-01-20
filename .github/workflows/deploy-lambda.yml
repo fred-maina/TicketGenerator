@@ -34,12 +34,11 @@ jobs:
           # Make a directory for the deployment package
           mkdir -p lambda-package
 
-          # Copy the Lambda function code (this assumes your Lambda function is in the current directory)
-          # Exclude the lambda-package directory from being copied into itself
-          find . -maxdepth 1 -not -name 'lambda-package' -exec cp -r {} lambda-package/ \;
+          # Copy the Lambda function code (excluding .git, node_modules, etc.)
+          find . -maxdepth 1 -not -name 'lambda-package' -not -name '.git' -not -name 'node_modules' -exec cp -r {} lambda-package/ \;
 
           # Copy the installed Python dependencies into the lambda-package directory
-          cp -r venv/lib/python3.x/site-packages/* lambda-package/  # Replace python3.x with the correct version
+          cp -r venv/lib/python*/site-packages/* lambda-package/  # Ensure the Python version matches
 
           # Zip the entire deployment package
           cd lambda-package
