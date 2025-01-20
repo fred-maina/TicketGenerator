@@ -3,46 +3,47 @@ name: Deploy Lambda to AWS
 on:
   push:
     branches:
-      - main  # Trigger on every push to the main branch
+      - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
+  build_and_deploy:
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3  # Checkout your repository code
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'  # specify the Python version for your Lambda function
 
-      - name: Install dependencies
-        run: |
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt  # Ensure you have a requirements.txt file with necessary dependencies
+    - name: Install dependencies
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
 
-      - name: Prepare Lambda function deployment package
-        run: |
-          mkdir -p lambda-package
-          cp -r * lambda-package/  # Only include your function code
-          cd lambda-package
-          zip -r ../QRCodeGenerator.zip .
+    - name: Create Lambda package
+      run: |
+        mkdir -p lambda-package
+        cp -r venv/lib/python3.8/site-packages/* lambda-package/  # Copy dependencies
+        cp -r * lambda-package/  # Copy your code files (do not copy venv)
+        rm -rf lambda-package/venv  # Remove the unnecessary venv folder
+        cd lambda-package
+        zip -r ../lambda-function.zip .  # Zip everything
 
-      - name: Upload deployment package to S3
-        run: |
-          aws s3 cp QRCodeGenerator.zip s3://your-bucket-name/QRCodeGenerator.zip
+    - name: Upload Lambda package to S3
+      run: |
+        aws s3 cp lambda-function.zip s3://eventsticket/lambda-function.zip  # Upload to S3
 
-      - name: Update Lambda function with S3 deployment package
-        run: |
-          aws lambda update-function-code --function-name QRCodeGenerator \
-            --s3-bucket your-bucket-name \
-            --s3-key QRCodeGenerator.zip  # Replace with your actual S3 bucket and object key
-
-      - name: Clean up
-        run: |
-          rm QRCodeGenerator.zip  # Clean up the zip file after deployment
+    - name: Deploy Lambda from S3
+      run: |
+        aws lambda update-function-code \
+          --function-name arn:aws:lambda:eu-north-1:465921435493:function:QRCodeGenerator \
+          --s3-bucket eventsticket \
+          --s3-key lambda-function.zip \
+          --region eu-north-1  # Adjust region if necessary
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
