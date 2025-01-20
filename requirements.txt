@@ -7,4 +7,4 @@ python-dateutil==2.9.0.post0
 qrcode==8.0
 s3transfer==0.11.1
 six==1.17.0
-urllib3==2.3.0
+
