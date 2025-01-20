@@ -9,7 +9,7 @@ from io import BytesIO
 # Initialize clients
 s3_client = boto3.client('s3')
 ses_client = boto3.client('ses')
-bucket_name = 'your-bucket-name'  # Replace with your S3 bucket name
+bucket_name = 'eventsticket'  # Replace with your S3 bucket name
 
 def generate_qr_code(data):
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
@@ -99,7 +99,7 @@ def send_ticket_email(to_email, ticket_url):
     )
     return response
 
-def lambda_handler(event, context):
+def lambda_handler(event):
     try:
         # Input from Spring Boot or API Gateway (you can pass these parameters)
         event_name = event["event_name"]
@@ -109,9 +109,7 @@ def lambda_handler(event, context):
         payment_mode = event["payment_mode"]
         ticket_type = event["ticket_type"]
         ticket_price = event["ticket_price"]
-        to_email = event["to_email"]
-        
-        purchase_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        purchase_time = event["purchase_time"]
 
         # Generate QR code
         qr_code = generate_qr_code(ticket_code)
@@ -136,20 +134,13 @@ def lambda_handler(event, context):
             ACL='public-read'  # Adjust ACL as needed
         )
 
-        # Generate a pre-signed URL for accessing the ticket
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket_name, 'Key': file_name},
-            ExpiresIn=3600  # URL valid for 1 hour
-        )
+        # Generate the public URL for the ticket
+        public_url = f"https://{bucket_name}.s3.amazonaws.com/{file_name}"
 
-        # Send the email with the pre-signed URL
-        send_ticket_email(to_email, presigned_url)
-
-        # Return the pre-signed URL to Spring Boot backend
+        # Return the public URL to Spring Boot backend
         return {
             'statusCode': 200,
-            'body': json.dumps({'message': 'Ticket generated and emailed successfully', 'ticket_url': presigned_url})
+            'body': json.dumps({'ticket_url': public_url})
         }
 
     except Exception as e:
