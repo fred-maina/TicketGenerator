@@ -22,19 +22,34 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Set up Python environment
           python3 -m venv venv
           source venv/bin/activate
-          pip install -r requirements.txt  # Ensure you have a requirements.txt file with necessary dependencies
+          pip install -r requirements.txt  # Install dependencies from requirements.txt
 
-      - name: Zip the Lambda function code
+      - name: Prepare Lambda deployment package
         run: |
-          zip -r QRCodeGenerator.zip .  # Zip the entire project directory (excluding files like .git, node_modules, etc.)
+          # Make a directory for the deployment package
+          mkdir -p lambda-package
+
+          # Copy the Lambda function and its dependencies to the package directory
+          cp -r * lambda-package/
+          cd lambda-package
+
+          # Ensure that all dependencies installed in the virtual environment are copied to the deployment package
+          cp -r ../venv/lib/python3.x/site-packages/* ./  # Replace python3.x with your actual Python version
+
+          # Zip the entire deployment package
+          zip -r ../QRCodeGenerator.zip .
 
       - name: Update Lambda function
         run: |
+          # Update the Lambda function with the new deployment package
           aws lambda update-function-code --function-name QRCodeGenerator \
             --zip-file fileb://QRCodeGenerator.zip  # Replace with your Lambda function name
-          
+
       - name: Clean up
         run: |
-          rm QRCodeGenerator.zip  # Clean up the zip file after deployment
+          # Clean up the zip file after deployment
+          rm QRCodeGenerator.zip
+          rm -rf lambda-package  # Remove the temporary directory
