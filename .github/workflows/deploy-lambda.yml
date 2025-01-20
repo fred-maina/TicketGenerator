@@ -27,14 +27,15 @@ jobs:
     - name: Create Lambda package
       run: |
         mkdir -p lambda-package
-        # Copy dependencies from venv to lambda-package
+        # Copy only the installed dependencies, not the entire venv folder
         cp -r venv/lib/python3.9/site-packages/* lambda-package/
-        # Copy your code files, excluding the lambda-package itself
+        # Copy your application code files (but not the venv directory itself)
         cp -r * lambda-package/
-        # Remove unnecessary venv folder from lambda-package directory
+        # Remove the unnecessary venv directory inside the lambda-package folder
         rm -rf lambda-package/venv
         cd lambda-package
-        zip -r ../lambda-function.zip .  # Zip everything into lambda-function.zip
+        # Zip all contents except the current directory itself
+        zip -r ../lambda-function.zip ./*
 
     - name: Upload Lambda package to S3
       run: |
