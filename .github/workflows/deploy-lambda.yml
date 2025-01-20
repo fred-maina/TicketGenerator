@@ -35,7 +35,8 @@ jobs:
           mkdir -p lambda-package
 
           # Copy the Lambda function code (this assumes your Lambda function is in the current directory)
-          cp -r * lambda-package/
+          # Exclude the lambda-package directory from being copied into itself
+          find . -maxdepth 1 -not -name 'lambda-package' -exec cp -r {} lambda-package/ \;
 
           # Copy the installed Python dependencies into the lambda-package directory
           cp -r venv/lib/python3.x/site-packages/* lambda-package/  # Replace python3.x with the correct version
