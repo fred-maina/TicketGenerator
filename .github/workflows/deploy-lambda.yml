@@ -1,0 +1,40 @@
+name: Deploy Lambda to AWS
+
+on:
+  push:
+    branches:
+      - main  # Trigger on every push to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3  # Checkout your repository code
+
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt  # Ensure you have a requirements.txt file with necessary dependencies
+
+      - name: Zip the Lambda function code
+        run: |
+          zip -r QRCodeGenerator.zip .  # Zip the entire project directory (excluding files like .git, node_modules, etc.)
+
+      - name: Update Lambda function
+        run: |
+          aws lambda update-function-code --function-name QRCodeGenerator \
+            --zip-file fileb://QRCodeGenerator.zip  # Replace with your Lambda function name
+          
+      - name: Clean up
+        run: |
+          rm QRCodeGenerator.zip  # Clean up the zip file after deployment
