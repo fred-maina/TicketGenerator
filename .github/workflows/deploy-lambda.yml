@@ -22,35 +22,27 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Create a virtual environment and activate it
           python3 -m venv venv
           source venv/bin/activate
-          
-          # Install dependencies from requirements.txt
           pip install -r requirements.txt  # Ensure you have a requirements.txt file with necessary dependencies
 
-      - name: Prepare Lambda deployment package
+      - name: Prepare Lambda function deployment package
         run: |
-          # Make a directory for the deployment package
           mkdir -p lambda-package
-
-          # Copy the Lambda function code (excluding .git, node_modules, etc.)
-          find . -maxdepth 1 -not -name 'lambda-package' -not -name '.git' -not -name 'node_modules' -exec cp -r {} lambda-package/ \;
-
-          # Copy the installed Python dependencies into the lambda-package directory
-          cp -r venv/lib/python*/site-packages/* lambda-package/  # Ensure the Python version matches
-
-          # Zip the entire deployment package
+          cp -r * lambda-package/  # Only include your function code
           cd lambda-package
           zip -r ../QRCodeGenerator.zip .
 
-      - name: Update Lambda function
+      - name: Upload deployment package to S3
         run: |
-          # Update Lambda function code with the newly zipped deployment package
+          aws s3 cp QRCodeGenerator.zip s3://your-bucket-name/QRCodeGenerator.zip
+
+      - name: Update Lambda function with S3 deployment package
+        run: |
           aws lambda update-function-code --function-name QRCodeGenerator \
-            --zip-file fileb://QRCodeGenerator.zip  # Replace with your Lambda function name
+            --s3-bucket your-bucket-name \
+            --s3-key QRCodeGenerator.zip  # Replace with your actual S3 bucket and object key
 
       - name: Clean up
         run: |
-          # Clean up the zip file after deployment
-          rm QRCodeGenerator.zip
+          rm QRCodeGenerator.zip  # Clean up the zip file after deployment
