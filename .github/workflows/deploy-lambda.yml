@@ -13,10 +13,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Set up Python
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'  # specify the Python version for your Lambda function
+        python-version: '3.9'  # Ensure Python 3.9 is used
 
     - name: Install dependencies
       run: |
@@ -27,7 +27,7 @@ jobs:
     - name: Create Lambda package
       run: |
         mkdir -p lambda-package
-        cp -r venv/lib/python3.8/site-packages/* lambda-package/  # Copy dependencies
+        cp -r venv/lib/python3.9/site-packages/* lambda-package/  # Copy dependencies
         cp -r * lambda-package/  # Copy your code files (do not copy venv)
         rm -rf lambda-package/venv  # Remove the unnecessary venv folder
         cd lambda-package
